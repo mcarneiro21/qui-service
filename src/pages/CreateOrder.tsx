@@ -1,0 +1,154 @@
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useProductStore, CATEGORY_FILTER_OPTIONS } from '../store/productStore'
+import { useOrderStore } from '../store/orderStore'
+import { ProductCategory } from '../types'
+import { CatalogItem } from '../components/catalog/CatalogItem'
+import { CartItem } from '../components/orders/CartItem'
+import { CartSummary } from '../components/orders/CartSummary'
+import { GlassCard } from '../components/ui/GlassCard'
+import { Input } from '../components/ui/Input'
+import { PageHeader } from '../components/layout/PageHeader'
+import { ShoppingCart } from 'lucide-react'
+
+type FilterValue = ProductCategory | 'all'
+
+export function CreateOrder() {
+  const navigate = useNavigate()
+  const products = useProductStore((s) => s.products)
+  const cart = useOrderStore((s) => s.cart)
+  const addToCart = useOrderStore((s) => s.addToCart)
+  const updateCartQuantity = useOrderStore((s) => s.updateCartQuantity)
+  const setTableNumber = useOrderStore((s) => s.setTableNumber)
+  const confirmOrder = useOrderStore((s) => s.confirmOrder)
+
+  const [filter, setFilter] = useState<FilterValue>('all')
+  const [tableInput, setTableInput] = useState('')
+
+  // O(1) lookup for cart quantities
+  const cartMap = useMemo(
+    () => new Map(cart.items.map((i) => [i.productId, i.quantity])),
+    [cart.items]
+  )
+
+  const filteredProducts = useMemo(
+    () =>
+      filter === 'all' ? products : products.filter((p) => p.category === filter),
+    [products, filter]
+  )
+
+  function handleConfirm() {
+    confirmOrder()
+    navigate('/pedidos')
+  }
+
+  function handleTableInput(value: string) {
+    setTableInput(value)
+    const num = parseInt(value)
+    setTableNumber(value && !isNaN(num) ? num : undefined)
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <PageHeader title="Novo Pedido" subtitle="Selecione os itens do pedido" />
+
+      <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-6">
+        {/* Catalog */}
+        <div>
+          {/* Filter tabs */}
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
+            {CATEGORY_FILTER_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setFilter(opt.value)}
+                className={[
+                  'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium font-body transition-colors duration-150',
+                  filter === opt.value
+                    ? 'bg-primary text-on_primary'
+                    : 'bg-surface_container_lowest text-on_surface_variant hover:bg-surface_container_highest',
+                ].join(' ')}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-on_surface_variant font-body">
+                Nenhum produto nessa categoria
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {filteredProducts.map((product) => (
+                <CatalogItem
+                  key={product.id}
+                  product={product}
+                  quantityInCart={cartMap.get(product.id) ?? 0}
+                  onAdd={() => addToCart(product)}
+                  onRemove={() =>
+                    updateCartQuantity(product.id, (cartMap.get(product.id) ?? 1) - 1)
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Cart — glass panel */}
+        <div className="mt-6 lg:mt-0">
+          <div className="lg:sticky lg:top-8">
+            <GlassCard className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <ShoppingCart size={18} className="text-primary" />
+                <h2 className="font-bold font-display text-on_surface">Carrinho</h2>
+                {cart.items.length > 0 && (
+                  <span className="ml-auto text-xs bg-primary text-on_primary px-2 py-0.5 rounded-full font-display">
+                    {cart.items.reduce((s, i) => s + i.quantity, 0)}
+                  </span>
+                )}
+              </div>
+
+              <Input
+                label="Mesa (opcional)"
+                placeholder="Ex: 14"
+                value={tableInput}
+                onChange={(e) => handleTableInput(e.target.value)}
+                type="number"
+                min={1}
+                className="mb-4"
+              />
+
+              {cart.items.length === 0 ? (
+                <div className="py-8 text-center">
+                  <ShoppingCart size={32} className="text-on_surface_variant/30 mx-auto mb-2" />
+                  <p className="text-sm text-on_surface_variant font-body">
+                    Adicione itens do cardápio
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-outline_variant/15">
+                  {cart.items.map((item) => (
+                    <CartItem key={item.productId} item={item} />
+                  ))}
+                </div>
+              )}
+
+              <CartSummary onConfirm={handleConfirm} />
+            </GlassCard>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile: sticky cart summary */}
+      <div className="lg:hidden fixed bottom-16 left-0 right-0 px-4 pb-3 z-40">
+        {cart.items.length > 0 && (
+          <div className="bg-white/90 backdrop-blur-[20px] rounded-2xl p-4 shadow-lg">
+            <CartSummary onConfirm={handleConfirm} />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
