@@ -1,43 +1,45 @@
 import { create } from 'zustand'
 import { Cart, Order, OrderItem, OrderStatus, Product } from '../types'
-import { loadFromStorage, saveToStorage } from '../lib/persistence'
-
-const STORAGE_KEY = 'qui:orders'
-
-interface PersistedOrderData {
-  orders: Order[]
-  nextOrderNumber: number
-}
+import { api } from '../lib/api'
 
 interface OrderState {
   orders: Order[]
-  nextOrderNumber: number
+  loading: boolean
+  error: string | null
   cart: Cart
-  // Cart actions
+  // Data fetching
+  fetchOrders: () => Promise<void>
+  // Cart actions (sync — local only)
   addToCart: (product: Product) => void
   removeFromCart: (productId: string) => void
   updateCartQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
   setTableNumber: (n: number | undefined) => void
-  // Order actions
-  confirmOrder: () => Order
-  updateOrderStatus: (id: string, status: OrderStatus) => void
-  deleteOrder: (id: string) => void
-}
-
-const { orders, nextOrderNumber } = loadFromStorage<PersistedOrderData>(STORAGE_KEY, {
-  orders: [],
-  nextOrderNumber: 1,
-})
-
-function saveOrders(orders: Order[], nextOrderNumber: number) {
-  saveToStorage<PersistedOrderData>(STORAGE_KEY, { orders, nextOrderNumber })
+  // Order actions (async — API)
+  confirmOrder: () => Promise<Order>
+  updateOrderStatus: (id: string, status: OrderStatus) => Promise<void>
+  deleteOrder: (id: string) => Promise<void>
 }
 
 export const useOrderStore = create<OrderState>((set, get) => ({
-  orders,
-  nextOrderNumber,
+  orders: [],
+  loading: false,
+  error: null,
   cart: { items: [] },
+
+  async fetchOrders() {
+    set({ loading: true, error: null })
+    try {
+      const orders = await api.orders.list()
+      set({ orders })
+    } catch (e) {
+      set({ error: (e as Error).message })
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  // ── Cart (síncrono) ─────────────────────────────────────────────────────────
 
   addToCart(product) {
     const { cart } = get()
@@ -55,16 +57,15 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
   removeFromCart(productId) {
     const { cart } = get()
-    const items = cart.items.filter((i) => i.productId !== productId)
-    set({ cart: { ...cart, items } })
+    set({ cart: { ...cart, items: cart.items.filter((i) => i.productId !== productId) } })
   },
 
   updateCartQuantity(productId, quantity) {
-    const { cart } = get()
     if (quantity <= 0) {
       get().removeFromCart(productId)
       return
     }
+    const { cart } = get()
     const items = cart.items.map((i) =>
       i.productId === productId ? { ...i, quantity } : i
     )
@@ -76,43 +77,39 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   },
 
   setTableNumber(n) {
-    const { cart } = get()
-    set({ cart: { ...cart, tableNumber: n } })
+    set({ cart: { ...get().cart, tableNumber: n } })
   },
 
-  confirmOrder() {
-    const { cart, orders, nextOrderNumber } = get()
-    const total = cart.items.reduce(
-      (sum, i) => sum + i.product.price * i.quantity,
-      0
-    )
-    const order: Order = {
-      id: crypto.randomUUID(),
-      orderNumber: nextOrderNumber,
-      items: cart.items,
-      status: 'pending',
+  // ── Orders (assíncrono) ─────────────────────────────────────────────────────
+
+  async confirmOrder() {
+    const { cart } = get()
+    const total = cart.items.reduce((sum, i) => sum + i.product.price * i.quantity, 0)
+
+    const order = await api.orders.create({
+      items: cart.items.map((i) => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        productName: i.product.name,
+        productPrice: i.product.price,
+      })),
       tableNumber: cart.tableNumber,
-      createdAt: new Date().toISOString(),
       total,
-    }
-    const newOrders = [order, ...orders]
-    const newNextNumber = nextOrderNumber + 1
-    set({ orders: newOrders, nextOrderNumber: newNextNumber, cart: { items: [] } })
-    saveOrders(newOrders, newNextNumber)
+    })
+
+    set({ orders: [order, ...get().orders], cart: { items: [] } })
     return order
   },
 
-  updateOrderStatus(id, status) {
-    const orders = get().orders.map((o) =>
-      o.id === id ? { ...o, status } : o
-    )
-    set({ orders })
-    saveOrders(orders, get().nextOrderNumber)
+  async updateOrderStatus(id, status) {
+    await api.orders.updateStatus(id, status)
+    set({
+      orders: get().orders.map((o) => (o.id === id ? { ...o, status } : o)),
+    })
   },
 
-  deleteOrder(id) {
-    const orders = get().orders.filter((o) => o.id !== id)
-    set({ orders })
-    saveOrders(orders, get().nextOrderNumber)
+  async deleteOrder(id) {
+    await api.orders.delete(id)
+    set({ orders: get().orders.filter((o) => o.id !== id) })
   },
 }))

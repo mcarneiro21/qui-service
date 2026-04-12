@@ -1,14 +1,16 @@
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag, Loader2 } from 'lucide-react'
 import { useOrderStore } from '../../store/orderStore'
 
 interface CartSummaryProps {
   onConfirm: () => void
+  confirming?: boolean
 }
 
-export function CartSummary({ onConfirm }: CartSummaryProps) {
+export function CartSummary({ onConfirm, confirming = false }: CartSummaryProps) {
   const cart = useOrderStore((s) => s.cart)
   const total = cart.items.reduce((sum, i) => sum + i.product.price * i.quantity, 0)
   const itemCount = cart.items.reduce((sum, i) => sum + i.quantity, 0)
+  const disabled = cart.items.length === 0 || confirming
 
   return (
     <div className="border-t border-outline_variant/20 pt-4 mt-2">
@@ -26,18 +28,22 @@ export function CartSummary({ onConfirm }: CartSummaryProps) {
 
       <button
         onClick={onConfirm}
-        disabled={cart.items.length === 0}
+        disabled={disabled}
         className={[
           'w-full rounded-xl py-4 font-display font-semibold text-base text-on_primary',
           'flex items-center justify-center gap-2',
           'transition-all duration-150 active:scale-95',
-          cart.items.length === 0
+          disabled
             ? 'bg-surface_container_highest text-on_surface_variant cursor-not-allowed'
             : 'bg-gradient-primary shadow-sm',
         ].join(' ')}
       >
-        <ShoppingBag size={18} />
-        Confirmar Pedido
+        {confirming ? (
+          <Loader2 size={18} className="animate-spin" />
+        ) : (
+          <ShoppingBag size={18} />
+        )}
+        {confirming ? 'Enviando...' : 'Confirmar Pedido'}
       </button>
     </div>
   )

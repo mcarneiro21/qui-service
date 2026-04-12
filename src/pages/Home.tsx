@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Pizza, Package, ClipboardList, ChevronRight } from 'lucide-react'
 import { Button } from '../components/ui/Button'
@@ -6,11 +7,18 @@ import { useProductStore } from '../store/productStore'
 
 export function Home() {
   const navigate = useNavigate()
+  const fetchOrders = useOrderStore((s) => s.fetchOrders)
+  const fetchProducts = useProductStore((s) => s.fetchProducts)
   const orderCount = useOrderStore((s) => s.orders.length)
   const productCount = useProductStore((s) => s.products.length)
   const activeOrders = useOrderStore((s) =>
     s.orders.filter((o) => o.status !== 'delivered').length
   )
+
+  useEffect(() => {
+    fetchOrders()
+    fetchProducts()
+  }, [fetchOrders, fetchProducts])
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
@@ -79,7 +87,7 @@ export function Home() {
               <div>
                 <p className="font-medium font-display text-on_surface text-sm">Pedidos</p>
                 <p className="text-xs text-on_surface_variant font-body">
-                  {activeOrders} {activeOrders === 1 ? 'em andamento' : 'em andamento'}
+                  {activeOrders} em andamento
                 </p>
               </div>
             </div>

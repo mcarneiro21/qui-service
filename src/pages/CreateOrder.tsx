@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProductStore, CATEGORY_FILTER_OPTIONS } from '../store/productStore'
 import { useOrderStore } from '../store/orderStore'
@@ -9,13 +9,15 @@ import { CartSummary } from '../components/orders/CartSummary'
 import { GlassCard } from '../components/ui/GlassCard'
 import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/layout/PageHeader'
-import { ShoppingCart } from 'lucide-react'
+import { ShoppingCart, Loader2 } from 'lucide-react'
 
 type FilterValue = ProductCategory | 'all'
 
 export function CreateOrder() {
   const navigate = useNavigate()
   const products = useProductStore((s) => s.products)
+  const loadingProducts = useProductStore((s) => s.loading)
+  const fetchProducts = useProductStore((s) => s.fetchProducts)
   const cart = useOrderStore((s) => s.cart)
   const addToCart = useOrderStore((s) => s.addToCart)
   const updateCartQuantity = useOrderStore((s) => s.updateCartQuantity)
@@ -24,22 +26,31 @@ export function CreateOrder() {
 
   const [filter, setFilter] = useState<FilterValue>('all')
   const [tableInput, setTableInput] = useState('')
+  const [confirming, setConfirming] = useState(false)
 
-  // O(1) lookup for cart quantities
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
+
   const cartMap = useMemo(
     () => new Map(cart.items.map((i) => [i.productId, i.quantity])),
     [cart.items]
   )
 
   const filteredProducts = useMemo(
-    () =>
-      filter === 'all' ? products : products.filter((p) => p.category === filter),
+    () => filter === 'all' ? products : products.filter((p) => p.category === filter),
     [products, filter]
   )
 
-  function handleConfirm() {
-    confirmOrder()
-    navigate('/pedidos')
+  async function handleConfirm() {
+    if (confirming) return
+    setConfirming(true)
+    try {
+      await confirmOrder()
+      navigate('/pedidos')
+    } finally {
+      setConfirming(false)
+    }
   }
 
   function handleTableInput(value: string) {
@@ -55,7 +66,6 @@ export function CreateOrder() {
       <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-6">
         {/* Catalog */}
         <div>
-          {/* Filter tabs */}
           <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
             {CATEGORY_FILTER_OPTIONS.map((opt) => (
               <button
@@ -73,7 +83,11 @@ export function CreateOrder() {
             ))}
           </div>
 
-          {filteredProducts.length === 0 ? (
+          {loadingProducts && products.length === 0 ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 size={24} className="text-primary animate-spin" />
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <p className="text-on_surface_variant font-body">
                 Nenhum produto nessa categoria
@@ -135,7 +149,7 @@ export function CreateOrder() {
                 </div>
               )}
 
-              <CartSummary onConfirm={handleConfirm} />
+              <CartSummary onConfirm={handleConfirm} confirming={confirming} />
             </GlassCard>
           </div>
         </div>
@@ -145,7 +159,7 @@ export function CreateOrder() {
       <div className="lg:hidden fixed bottom-16 left-0 right-0 px-4 pb-3 z-40">
         {cart.items.length > 0 && (
           <div className="bg-white/90 backdrop-blur-[20px] rounded-2xl p-4 shadow-lg">
-            <CartSummary onConfirm={handleConfirm} />
+            <CartSummary onConfirm={handleConfirm} confirming={confirming} />
           </div>
         )}
       </div>
