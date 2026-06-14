@@ -11,6 +11,7 @@ const statusClasses: Record<OrderStatus, string> = {
 
 const categoryClasses: Record<ProductCategory, string> = {
   pizza: 'bg-primary/10 text-primary',
+  broto: 'bg-orange-100 text-orange-800',
   esfirra: 'bg-amber-100 text-amber-800',
   refrigerante: 'bg-blue-100 text-blue-800',
 }
@@ -20,7 +21,7 @@ function isOrderStatus(v: BadgeVariant): v is OrderStatus {
 }
 
 function isProductCategory(v: BadgeVariant): v is ProductCategory {
-  return ['pizza', 'esfirra', 'refrigerante'].includes(v)
+  return ['pizza', 'broto', 'esfirra', 'refrigerante'].includes(v)
 }
 
 interface BadgeProps {

@@ -4,32 +4,32 @@ const prisma = new PrismaClient()
 
 const PRODUCTS = [
   // ── Pizzas Salgadas — Broto ──────────────────────────────────────────────────
-  { name: 'Mussarela (Broto)', description: 'Molho de tomate, mussarela, azeitona, tomate e orégano.', price: 27.0, category: 'pizza' },
-  { name: 'Calabresa (Broto)', description: 'Molho de tomate, calabresa, cebola.', price: 27.0, category: 'pizza' },
-  { name: 'Portuguesa (Broto)', description: 'Molho de tomate, presunto, milho, ervilha, cebola, ovos e mussarela.', price: 30.0, category: 'pizza' },
-  { name: 'Bacon (Broto)', description: 'Molho de tomate, mussarela e bacon.', price: 29.0, category: 'pizza' },
-  { name: 'Moda da Casa (Broto)', description: 'Molho de tomate, calabresa, cebola, catupiry e mussarela.', price: 32.0, category: 'pizza' },
-  { name: 'Frango com Catupiry (Broto)', description: 'Molho de tomate, frango desfiado e catupiry.', price: 30.0, category: 'pizza' },
-  { name: 'Bauru (Broto)', description: 'Molho de tomate, mussarela, presunto, tomate.', price: 28.0, category: 'pizza' },
-  { name: 'Toscana (Broto)', description: 'Molho de tomate, calabresa, mussarela e cebola.', price: 28.0, category: 'pizza' },
-  { name: 'Argentina (Broto)', description: 'Molho de tomate, calabresa, cebola, mussarela, bacon e alho.', price: 31.0, category: 'pizza' },
-  { name: '2 Queijos (Broto)', description: 'Molho de tomate, catupiry e mussarela.', price: 28.0, category: 'pizza' },
-  { name: '3 Queijos (Broto)', description: 'Molho de tomate, mussarela, parmesão e catupiry.', price: 29.0, category: 'pizza' },
-  { name: '4 Queijos (Broto)', description: 'Molho de tomate, catupiry, mussarela, provolone e parmesão.', price: 32.0, category: 'pizza' },
-  { name: 'Calabresa com Catupiry (Broto)', description: 'Molho de tomate, calabresa fatiada, cebola e catupiry.', price: 29.0, category: 'pizza' },
-  { name: 'Brócolis 1 (Broto)', description: 'Molho de tomate, mussarela e brócolis.', price: 28.0, category: 'pizza' },
-  { name: 'Brócolis 2 (Broto)', description: 'Molho de tomate, mussarela, brócolis e bacon.', price: 29.0, category: 'pizza' },
-  { name: 'Baiana (Broto)', description: 'Molho de tomate, calabresa ralada, ovos, cebola e molho de pimenta.', price: 28.0, category: 'pizza' },
-  { name: 'Milho (Broto)', description: 'Molho de tomate, mussarela e milho.', price: 28.0, category: 'pizza' },
-  { name: 'Atum com Mussarela (Broto)', description: 'Molho de tomate, cebola, atum e mussarela.', price: 32.0, category: 'pizza' },
-  { name: 'Frango com Mussarela (Broto)', description: 'Molho de tomate, frango desfiado e mussarela.', price: 28.0, category: 'pizza' },
-  { name: 'Caipira (Broto)', description: 'Molho de tomate, frango desfiado, milho, ervilha e mussarela.', price: 29.0, category: 'pizza' },
-  { name: 'Napolitana (Broto)', description: 'Molho de tomate, parmesão, mussarela e tomate em rodelas.', price: 28.0, category: 'pizza' },
-  { name: 'Atum (Broto)', description: 'Molho de tomate, cebola e atum.', price: 34.0, category: 'pizza' },
+  { name: 'Mussarela (Broto)', description: 'Molho de tomate, mussarela, azeitona, tomate e orégano.', price: 27.0, category: 'broto' },
+  { name: 'Calabresa (Broto)', description: 'Molho de tomate, calabresa, cebola.', price: 27.0, category: 'broto' },
+  { name: 'Portuguesa (Broto)', description: 'Molho de tomate, presunto, milho, ervilha, cebola, ovos e mussarela.', price: 30.0, category: 'broto' },
+  { name: 'Bacon (Broto)', description: 'Molho de tomate, mussarela e bacon.', price: 29.0, category: 'broto' },
+  { name: 'Moda da Casa (Broto)', description: 'Molho de tomate, calabresa, cebola, catupiry e mussarela.', price: 32.0, category: 'broto' },
+  { name: 'Frango com Catupiry (Broto)', description: 'Molho de tomate, frango desfiado e catupiry.', price: 30.0, category: 'broto' },
+  { name: 'Bauru (Broto)', description: 'Molho de tomate, mussarela, presunto, tomate.', price: 28.0, category: 'broto' },
+  { name: 'Toscana (Broto)', description: 'Molho de tomate, calabresa, mussarela e cebola.', price: 28.0, category: 'broto' },
+  { name: 'Argentina (Broto)', description: 'Molho de tomate, calabresa, cebola, mussarela, bacon e alho.', price: 31.0, category: 'broto' },
+  { name: '2 Queijos (Broto)', description: 'Molho de tomate, catupiry e mussarela.', price: 28.0, category: 'broto' },
+  { name: '3 Queijos (Broto)', description: 'Molho de tomate, mussarela, parmesão e catupiry.', price: 29.0, category: 'broto' },
+  { name: '4 Queijos (Broto)', description: 'Molho de tomate, catupiry, mussarela, provolone e parmesão.', price: 32.0, category: 'broto' },
+  { name: 'Calabresa com Catupiry (Broto)', description: 'Molho de tomate, calabresa fatiada, cebola e catupiry.', price: 29.0, category: 'broto' },
+  { name: 'Brócolis 1 (Broto)', description: 'Molho de tomate, mussarela e brócolis.', price: 28.0, category: 'broto' },
+  { name: 'Brócolis 2 (Broto)', description: 'Molho de tomate, mussarela, brócolis e bacon.', price: 29.0, category: 'broto' },
+  { name: 'Baiana (Broto)', description: 'Molho de tomate, calabresa ralada, ovos, cebola e molho de pimenta.', price: 28.0, category: 'broto' },
+  { name: 'Milho (Broto)', description: 'Molho de tomate, mussarela e milho.', price: 28.0, category: 'broto' },
+  { name: 'Atum com Mussarela (Broto)', description: 'Molho de tomate, cebola, atum e mussarela.', price: 32.0, category: 'broto' },
+  { name: 'Frango com Mussarela (Broto)', description: 'Molho de tomate, frango desfiado e mussarela.', price: 28.0, category: 'broto' },
+  { name: 'Caipira (Broto)', description: 'Molho de tomate, frango desfiado, milho, ervilha e mussarela.', price: 29.0, category: 'broto' },
+  { name: 'Napolitana (Broto)', description: 'Molho de tomate, parmesão, mussarela e tomate em rodelas.', price: 28.0, category: 'broto' },
+  { name: 'Atum (Broto)', description: 'Molho de tomate, cebola e atum.', price: 34.0, category: 'broto' },
   // Pizzas Doces — Broto
-  { name: 'Brigadeiro (Broto)', description: 'Chocolate com granulado.', price: 29.0, category: 'pizza' },
-  { name: 'Confeito (Broto)', description: 'Chocolate com confeito.', price: 29.0, category: 'pizza' },
-  { name: 'Mesclado (Broto)', description: 'Chocolate branco com chocolate preto.', price: 29.0, category: 'pizza' },
+  { name: 'Brigadeiro (Broto)', description: 'Chocolate com granulado.', price: 29.0, category: 'broto' },
+  { name: 'Confeito (Broto)', description: 'Chocolate com confeito.', price: 29.0, category: 'broto' },
+  { name: 'Mesclado (Broto)', description: 'Chocolate branco com chocolate preto.', price: 29.0, category: 'broto' },
 
   // ── Pizzas Salgadas — Grande ─────────────────────────────────────────────────
   { name: 'Mussarela (Grande)', description: 'Molho de tomate, mussarela, azeitona, tomate e orégano.', price: 38.0, category: 'pizza' },
@@ -69,6 +69,12 @@ const PRODUCTS = [
   { name: 'Cerveja 350ml', description: 'Cerveja lata 350ml.', price: 7.0, category: 'refrigerante' },
 ]
 
+const CUSTOMERS = [
+  { name: 'João Silva', address: 'Rua das Flores, 123 - Centro', phone: '(11) 98765-4321' },
+  { name: 'Maria Oliveira', address: 'Av. Brasil, 456 - Jardim América', phone: '(11) 91234-5678' },
+  { name: 'Carlos Souza', address: 'Rua Antônio Del Buoni, 78 - Vila Nova', phone: '(11) 99988-7766' },
+]
+
 async function main() {
   console.log(`[seed] Sincronizando ${PRODUCTS.length} produtos do cardápio...`)
 
@@ -80,7 +86,7 @@ async function main() {
     if (existing) {
       await prisma.product.update({
         where: { id: existing.id },
-        data: { price: data.price, description: data.description },
+        data: { price: data.price, description: data.description, category: data.category },
       })
       updated++
     } else {
@@ -89,7 +95,20 @@ async function main() {
     }
   }
 
-  console.log(`[seed] Concluído — ${created} criados, ${updated} atualizados.`)
+  console.log(`[seed] Produtos — ${created} criados, ${updated} atualizados.`)
+
+  let custCreated = 0
+  for (const data of CUSTOMERS) {
+    const existing = await prisma.customer.findFirst({ where: { phone: data.phone } })
+    if (existing) {
+      await prisma.customer.update({ where: { id: existing.id }, data })
+    } else {
+      await prisma.customer.create({ data })
+      custCreated++
+    }
+  }
+
+  console.log(`[seed] Clientes — ${custCreated} criados.`)
 }
 
 main()

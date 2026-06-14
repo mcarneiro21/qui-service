@@ -1,4 +1,4 @@
-import { Order, OrderStatus, Product } from '../types'
+import { Customer, Order, OrderStatus, Product } from '../types'
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -40,6 +40,8 @@ export const api = {
       }>
       tableNumber?: number
       total: number
+      customerId?: string
+      deliveryFee?: number
     }) => request<Order>('/api/orders', { method: 'POST', body: JSON.stringify(payload) }),
     updateStatus: (id: string, status: OrderStatus) =>
       request<{ id: string; status: OrderStatus }>(`/api/orders/${id}/status`, {
@@ -48,5 +50,15 @@ export const api = {
       }),
     delete: (id: string) =>
       request<void>(`/api/orders/${id}`, { method: 'DELETE' }),
+  },
+
+  customers: {
+    list: () => request<Customer[]>('/api/customers'),
+    create: (data: Omit<Customer, 'id' | 'createdAt'>) =>
+      request<Customer>('/api/customers', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Omit<Customer, 'id' | 'createdAt'>>) =>
+      request<Customer>(`/api/customers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) =>
+      request<void>(`/api/customers/${id}`, { method: 'DELETE' }),
   },
 }

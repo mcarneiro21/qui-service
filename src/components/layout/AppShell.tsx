@@ -1,10 +1,11 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { Home, Package, ShoppingCart, ClipboardList } from 'lucide-react'
+import { Home, Package, Users, ShoppingCart, ClipboardList } from 'lucide-react'
 import { useOrderStore } from '../../store/orderStore'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Início', exact: true },
   { to: '/produtos', icon: Package, label: 'Produtos', exact: false },
+  { to: '/clientes', icon: Users, label: 'Clientes', exact: false },
   { to: '/pedido/novo', icon: ShoppingCart, label: 'Pedido', exact: false },
   { to: '/pedidos', icon: ClipboardList, label: 'Pedidos', exact: false },
 ]

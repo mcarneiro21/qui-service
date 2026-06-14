@@ -49,6 +49,11 @@ export function OrderCard({ order }: OrderCardProps) {
           <span className="font-bold font-display text-on_surface text-lg">
             #{order.orderNumber}
           </span>
+          {order.customer && (
+            <span className="text-sm text-on_surface font-body font-medium truncate">
+              {order.customer.name}
+            </span>
+          )}
           {order.tableNumber && (
             <span className="text-sm text-on_surface_variant font-body">
               Mesa {order.tableNumber}
@@ -97,6 +102,14 @@ export function OrderCard({ order }: OrderCardProps) {
       {/* Expanded details */}
       {expanded && (
         <div className="px-5 pb-4 border-t border-outline_variant/15 mt-1 pt-4 flex flex-col gap-3">
+          {order.customer && (
+            <div className="bg-surface_container_low rounded-xl px-3 py-2">
+              <p className="font-medium font-display text-on_surface text-sm">{order.customer.name}</p>
+              <p className="text-xs text-on_surface_variant font-body mt-0.5">
+                {order.customer.phone} · {order.customer.address}
+              </p>
+            </div>
+          )}
           <div className="flex flex-col gap-2">
             {order.items.map((item) => (
               <div key={itemKey(item)} className="flex justify-between items-start gap-2">
@@ -115,6 +128,17 @@ export function OrderCard({ order }: OrderCardProps) {
                 </span>
               </div>
             ))}
+          </div>
+
+          <div className="flex flex-col gap-1 pt-1 border-t border-outline_variant/15">
+            <div className="flex justify-between text-xs text-on_surface_variant font-body pt-2">
+              <span>Subtotal</span>
+              <span>R${(order.total - order.deliveryFee).toFixed(2).replace('.', ',')}</span>
+            </div>
+            <div className="flex justify-between text-xs text-on_surface_variant font-body">
+              <span>Entrega</span>
+              <span>R${order.deliveryFee.toFixed(2).replace('.', ',')}</span>
+            </div>
           </div>
 
           <div className="flex items-center justify-between pt-2">

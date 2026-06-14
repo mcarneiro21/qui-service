@@ -48,6 +48,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
 export const CATEGORY_FILTER_OPTIONS: { label: string; value: ProductCategory | 'all' }[] = [
   { label: 'Todos', value: 'all' },
   { label: 'Pizzas', value: 'pizza' },
+  { label: 'Brotos', value: 'broto' },
   { label: 'Esfirras', value: 'esfirra' },
   { label: 'Bebidas', value: 'refrigerante' },
 ]

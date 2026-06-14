@@ -2,13 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProductStore, CATEGORY_FILTER_OPTIONS } from '../store/productStore'
 import { useOrderStore, itemKey } from '../store/orderStore'
-import { Product, ProductCategory } from '../types'
+import { useCustomerStore } from '../store/customerStore'
+import { Customer, Order, Product, ProductCategory } from '../types'
 import { CatalogItem } from '../components/catalog/CatalogItem'
 import { CartItem } from '../components/orders/CartItem'
 import { CartSummary } from '../components/orders/CartSummary'
+import { CustomerSelect } from '../components/customers/CustomerSelect'
+import { Receipt } from '../components/orders/Receipt'
 import { GlassCard } from '../components/ui/GlassCard'
 import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/layout/PageHeader'
+import { computeDeliveryFee } from '../lib/delivery'
 import { ShoppingCart, Loader2, X } from 'lucide-react'
 
 type FilterValue = ProductCategory | 'all'
@@ -18,24 +22,50 @@ export function CreateOrder() {
   const products = useProductStore((s) => s.products)
   const loadingProducts = useProductStore((s) => s.loading)
   const fetchProducts = useProductStore((s) => s.fetchProducts)
+  const fetchCustomers = useCustomerStore((s) => s.fetchCustomers)
   const cart = useOrderStore((s) => s.cart)
   const addToCart = useOrderStore((s) => s.addToCart)
   const addHalfHalfToCart = useOrderStore((s) => s.addHalfHalfToCart)
   const updateCartQuantity = useOrderStore((s) => s.updateCartQuantity)
   const setTableNumber = useOrderStore((s) => s.setTableNumber)
+  const setCustomer = useOrderStore((s) => s.setCustomer)
+  const setDeliveryFee = useOrderStore((s) => s.setDeliveryFee)
   const confirmOrder = useOrderStore((s) => s.confirmOrder)
 
   const [filter, setFilter] = useState<FilterValue>('all')
   const [tableInput, setTableInput] = useState('')
+  const [deliveryInput, setDeliveryInput] = useState(
+    cart.deliveryFee.toFixed(2).replace('.', ',')
+  )
   const [confirming, setConfirming] = useState(false)
-  // Seleção meio a meio: guarda a primeira pizza escolhida
+  const [confirmError, setConfirmError] = useState<string | null>(null)
   const [halfHalfFirst, setHalfHalfFirst] = useState<Product | null>(null)
+  const [printOrder, setPrintOrder] = useState<Order | null>(null)
 
   useEffect(() => {
     fetchProducts()
-  }, [fetchProducts])
+    fetchCustomers()
+  }, [fetchProducts, fetchCustomers])
 
-  // Mapa de quantidades no carrinho para itens normais
+  // Impressão automática do cupom após confirmar
+  useEffect(() => {
+    if (!printOrder) return
+    let navigated = false
+    const go = () => {
+      if (navigated) return
+      navigated = true
+      navigate('/pedidos')
+    }
+    window.addEventListener('afterprint', go)
+    const raf = requestAnimationFrame(() => window.print())
+    const fallback = setTimeout(go, 3000)
+    return () => {
+      window.removeEventListener('afterprint', go)
+      cancelAnimationFrame(raf)
+      clearTimeout(fallback)
+    }
+  }, [printOrder, navigate])
+
   const cartMap = useMemo(
     () => new Map(cart.items.filter((i) => !i.isHalfHalf).map((i) => [i.productId, i.quantity])),
     [cart.items]
@@ -46,14 +76,11 @@ export function CreateOrder() {
     [products, filter]
   )
 
-  // Ao clicar em "½+½" na primeira pizza
   function handleStartHalfHalf(product: Product) {
     setHalfHalfFirst(product)
-    // Força mostrar só pizzas para facilitar seleção da segunda metade
     setFilter('pizza')
   }
 
-  // Ao clicar na segunda pizza (botão "+" quando halfHalfFirst está ativo)
   function handleSelectSecondHalf(second: Product) {
     if (!halfHalfFirst) return
     addHalfHalfToCart(halfHalfFirst, second)
@@ -63,10 +90,12 @@ export function CreateOrder() {
   async function handleConfirm() {
     if (confirming) return
     setConfirming(true)
+    setConfirmError(null)
     try {
-      await confirmOrder()
-      navigate('/pedidos')
-    } finally {
+      const order = await confirmOrder()
+      setPrintOrder(order) // dispara a impressão automática (useEffect)
+    } catch (e) {
+      setConfirmError((e as Error).message)
       setConfirming(false)
     }
   }
@@ -75,6 +104,21 @@ export function CreateOrder() {
     setTableInput(value)
     const num = parseInt(value)
     setTableNumber(value && !isNaN(num) ? num : undefined)
+  }
+
+  // Ao selecionar o cliente, a taxa de entrega é pré-preenchida (hoje = mínimo;
+  // futuro = derivada do endereço). O campo continua editável.
+  function handleSelectCustomer(customer: Customer | undefined) {
+    setCustomer(customer)
+    const fee = customer ? computeDeliveryFee(customer.address) : cart.deliveryFee
+    setDeliveryInput(fee.toFixed(2).replace('.', ','))
+  }
+
+  function handleDeliveryInput(value: string) {
+    const clean = value.replace(/[^0-9,.]/g, '')
+    setDeliveryInput(clean)
+    const num = parseFloat(clean.replace(',', '.'))
+    setDeliveryFee(isNaN(num) ? 0 : num)
   }
 
   return (
@@ -171,15 +215,25 @@ export function CreateOrder() {
                 )}
               </div>
 
-              <Input
-                label="Mesa (opcional)"
-                placeholder="Ex: 14"
-                value={tableInput}
-                onChange={(e) => handleTableInput(e.target.value)}
-                type="number"
-                min={1}
-                className="mb-4"
-              />
+              <CustomerSelect selected={cart.customer} onSelect={handleSelectCustomer} />
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <Input
+                  label="Mesa (opcional)"
+                  placeholder="Ex: 14"
+                  value={tableInput}
+                  onChange={(e) => handleTableInput(e.target.value)}
+                  type="number"
+                  min={1}
+                />
+                <Input
+                  label="Entrega (R$)"
+                  placeholder="3,00"
+                  value={deliveryInput}
+                  onChange={(e) => handleDeliveryInput(e.target.value)}
+                  inputMode="decimal"
+                />
+              </div>
 
               {cart.items.length === 0 ? (
                 <div className="py-8 text-center">
@@ -196,7 +250,15 @@ export function CreateOrder() {
                 </div>
               )}
 
-              <CartSummary onConfirm={handleConfirm} confirming={confirming} />
+              {confirmError && (
+                <p className="text-xs text-primary font-body mt-3 text-center">{confirmError}</p>
+              )}
+
+              <CartSummary
+                onConfirm={handleConfirm}
+                confirming={confirming}
+                customerSelected={!!cart.customer}
+              />
             </GlassCard>
           </div>
         </div>
@@ -206,10 +268,17 @@ export function CreateOrder() {
       <div className="lg:hidden fixed bottom-16 left-0 right-0 px-4 pb-3 z-40">
         {cart.items.length > 0 && (
           <div className="bg-white/90 backdrop-blur-[20px] rounded-2xl p-4 shadow-lg">
-            <CartSummary onConfirm={handleConfirm} confirming={confirming} />
+            <CartSummary
+              onConfirm={handleConfirm}
+              confirming={confirming}
+              customerSelected={!!cart.customer}
+            />
           </div>
         )}
       </div>
+
+      {/* Cupom para impressão (fora da tela, visível só ao imprimir) */}
+      {printOrder && <Receipt order={printOrder} />}
     </div>
   )
 }

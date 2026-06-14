@@ -1,6 +1,9 @@
 import { create } from 'zustand'
-import { Cart, Order, OrderItem, OrderStatus, Product, halfHalfPrice } from '../types'
+import { Cart, Customer, Order, OrderItem, OrderStatus, Product, halfHalfPrice } from '../types'
 import { api } from '../lib/api'
+import { MIN_DELIVERY_FEE, computeDeliveryFee } from '../lib/delivery'
+
+const EMPTY_CART: Cart = { items: [], deliveryFee: MIN_DELIVERY_FEE }
 
 interface OrderState {
   orders: Order[]
@@ -15,6 +18,8 @@ interface OrderState {
   updateCartQuantity: (productId: string, quantity: number, isHalfHalf?: boolean, secondProductId?: string) => void
   clearCart: () => void
   setTableNumber: (n: number | undefined) => void
+  setCustomer: (customer: Customer | undefined) => void
+  setDeliveryFee: (fee: number) => void
   // Order actions (async)
   confirmOrder: () => Promise<Order>
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<void>
@@ -32,7 +37,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   orders: [],
   loading: false,
   error: null,
-  cart: { items: [] },
+  cart: EMPTY_CART,
 
   async fetchOrders() {
     set({ loading: true, error: null })
@@ -122,18 +127,37 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   },
 
   clearCart() {
-    set({ cart: { items: [] } })
+    set({ cart: { ...EMPTY_CART } })
   },
 
   setTableNumber(n) {
     set({ cart: { ...get().cart, tableNumber: n } })
   },
 
+  setCustomer(customer) {
+    const { cart } = get()
+    // Pré-preenche a taxa de entrega a partir do endereço do cliente.
+    // Hoje computeDeliveryFee retorna o mínimo; no futuro derivará do endereço.
+    const deliveryFee = customer ? computeDeliveryFee(customer.address) : cart.deliveryFee
+    set({ cart: { ...cart, customer, deliveryFee } })
+  },
+
+  setDeliveryFee(fee) {
+    set({ cart: { ...get().cart, deliveryFee: fee } })
+  },
+
   // ── Orders (assíncrono) ──────────────────────────────────────────────────────
 
   async confirmOrder() {
     const { cart } = get()
-    const total = cart.items.reduce((sum, i) => sum + i.product.price * i.quantity, 0)
+    if (!cart.customer) {
+      throw new Error('Selecione um cliente para o pedido')
+    }
+    if (cart.deliveryFee < MIN_DELIVERY_FEE) {
+      throw new Error('A taxa de entrega mínima é R$ 3,00')
+    }
+    const subtotal = cart.items.reduce((sum, i) => sum + i.product.price * i.quantity, 0)
+    const total = subtotal + cart.deliveryFee
 
     const order = await api.orders.create({
       items: cart.items.map((i) => ({
@@ -148,9 +172,11 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       })),
       tableNumber: cart.tableNumber,
       total,
+      customerId: cart.customer.id,
+      deliveryFee: cart.deliveryFee,
     })
 
-    set({ orders: [order, ...get().orders], cart: { items: [] } })
+    set({ orders: [order, ...get().orders], cart: { ...EMPTY_CART } })
     return order
   },
 

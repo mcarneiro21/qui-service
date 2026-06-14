@@ -19,13 +19,27 @@ model Product {
   @@map("products")
 }
 
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  phone     String
+  createdAt DateTime @default(now()) @map("created_at")
+  orders    Order[]
+
+  @@map("customers")
+}
+
 model Order {
   id          String      @id @default(uuid())
   orderNumber Int         @unique @default(autoincrement()) @map("order_number")
   status      String      @default("pending")
   tableNumber Int?        @map("table_number")
   total       Decimal     @db.Decimal(10, 2)
+  deliveryFee Decimal     @default(3.00) @db.Decimal(10, 2) @map("delivery_fee")
   createdAt   DateTime    @default(now()) @map("created_at")
+  customerId  String?     @map("customer_id")
+  customer    Customer?   @relation(fields: [customerId], references: [id])
   items       OrderItem[]
 
   @@map("orders")

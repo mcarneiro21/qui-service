@@ -1,4 +1,4 @@
-export type ProductCategory = 'pizza' | 'esfirra' | 'refrigerante'
+export type ProductCategory = 'pizza' | 'broto' | 'esfirra' | 'refrigerante'
 
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered'
 
@@ -8,6 +8,14 @@ export interface Product {
   description: string
   price: number
   category: ProductCategory
+  createdAt: string
+}
+
+export interface Customer {
+  id: string
+  name: string
+  address: string
+  phone: string
   createdAt: string
 }
 
@@ -25,17 +33,22 @@ export interface Order {
   items: OrderItem[]
   status: OrderStatus
   tableNumber?: number
+  deliveryFee: number
   createdAt: string
   total: number
+  customer?: Customer
 }
 
 export interface Cart {
   items: OrderItem[]
   tableNumber?: number
+  customer?: Customer
+  deliveryFee: number
 }
 
 export const CATEGORY_LABELS: Record<ProductCategory, string> = {
   pizza: 'Pizza',
+  broto: 'Broto',
   esfirra: 'Esfirra',
   refrigerante: 'Refrigerante',
 }
