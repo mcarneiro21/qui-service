@@ -8,6 +8,7 @@ interface ProductState {
   error: string | null
   fetchProducts: () => Promise<void>
   addProduct: (data: Omit<Product, 'id' | 'createdAt'>) => Promise<void>
+  updateProduct: (id: string, data: Partial<Omit<Product, 'id' | 'createdAt'>>) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
 }
 
@@ -31,6 +32,11 @@ export const useProductStore = create<ProductState>((set, get) => ({
   async addProduct(data) {
     const product = await api.products.create(data)
     set({ products: [...get().products, product] })
+  },
+
+  async updateProduct(id, data) {
+    const updated = await api.products.update(id, data)
+    set({ products: get().products.map((p) => (p.id === id ? updated : p)) })
   },
 
   async deleteProduct(id) {

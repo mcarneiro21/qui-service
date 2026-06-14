@@ -19,6 +19,8 @@ export const api = {
     list: () => request<Product[]>('/api/products'),
     create: (data: Omit<Product, 'id' | 'createdAt'>) =>
       request<Product>('/api/products', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Omit<Product, 'id' | 'createdAt'>>) =>
+      request<Product>(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     delete: (id: string) =>
       request<void>(`/api/products/${id}`, { method: 'DELETE' }),
   },

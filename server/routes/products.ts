@@ -56,6 +56,27 @@ productsRouter.post('/', async (req: Request, res: Response, next: NextFunction)
   }
 })
 
+// PATCH /api/products/:id
+productsRouter.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params
+    const { name, description, price, category } = req.body as Partial<{
+      name: string
+      description: string
+      price: number
+      category: string
+    }>
+
+    const product = await prisma.product.update({
+      where: { id },
+      data: { name, description, price, category },
+    })
+    res.json(serialize(product))
+  } catch (err) {
+    next(err)
+  }
+})
+
 // DELETE /api/products/:id
 productsRouter.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
