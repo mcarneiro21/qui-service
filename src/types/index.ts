@@ -15,6 +15,8 @@ export interface OrderItem {
   productId: string
   product: Product
   quantity: number
+  isHalfHalf?: boolean
+  secondProduct?: Product
 }
 
 export interface Order {
@@ -43,4 +45,8 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   preparing: 'Em Preparo',
   ready: 'Pronto',
   delivered: 'Entregue',
+}
+
+export function halfHalfPrice(a: number, b: number): number {
+  return Math.max(a, b)
 }

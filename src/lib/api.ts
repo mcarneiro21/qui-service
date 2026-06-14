@@ -26,7 +26,16 @@ export const api = {
   orders: {
     list: () => request<Order[]>('/api/orders'),
     create: (payload: {
-      items: Array<{ productId: string; quantity: number; productName: string; productPrice: number }>
+      items: Array<{
+        productId: string
+        quantity: number
+        productName: string
+        productPrice: number
+        isHalfHalf?: boolean
+        secondProductId?: string
+        secondProductName?: string
+        secondProductPrice?: number
+      }>
       tableNumber?: number
       total: number
     }) => request<Order>('/api/orders', { method: 'POST', body: JSON.stringify(payload) }),

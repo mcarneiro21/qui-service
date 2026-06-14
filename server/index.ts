@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import { productsRouter } from './routes/products'
 import { ordersRouter } from './routes/orders'
@@ -14,6 +14,12 @@ app.use('/api/orders', ordersRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' })
+})
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('[server] erro não tratado:', err.message)
+  res.status(500).json({ error: 'Erro interno do servidor.' })
 })
 
 app.listen(PORT, () => {

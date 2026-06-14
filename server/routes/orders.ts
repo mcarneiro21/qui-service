@@ -3,6 +3,48 @@ import { prisma } from '../db'
 
 export const ordersRouter = Router()
 
+function serializeItem(item: {
+  productId: string
+  productName: string
+  productPrice: object
+  quantity: number
+  isHalfHalf: boolean
+  secondProductId: string | null
+  secondProductName: string | null
+  secondProductPrice: object | null
+  product: { id: string; description: string; category: string; createdAt: Date }
+}) {
+  const base = {
+    productId: item.productId,
+    quantity: item.quantity,
+    isHalfHalf: item.isHalfHalf,
+    product: {
+      id: item.product.id,
+      name: item.productName,
+      description: item.product.description,
+      price: Number(item.productPrice),
+      category: item.product.category,
+      createdAt: item.product.createdAt.toISOString(),
+    },
+  }
+
+  if (item.isHalfHalf && item.secondProductId) {
+    return {
+      ...base,
+      secondProduct: {
+        id: item.secondProductId,
+        name: item.secondProductName ?? '',
+        description: '',
+        price: Number(item.secondProductPrice),
+        category: 'pizza',
+        createdAt: '',
+      },
+    }
+  }
+
+  return base
+}
+
 // GET /api/orders
 ordersRouter.get('/', async (_req: Request, res: Response) => {
   const orders = await prisma.order.findMany({
@@ -10,7 +52,6 @@ ordersRouter.get('/', async (_req: Request, res: Response) => {
     orderBy: { createdAt: 'desc' },
   })
 
-  // Mapear para o formato esperado pelo frontend
   const mapped = orders.map((order) => ({
     id: order.id,
     orderNumber: order.orderNumber,
@@ -18,18 +59,7 @@ ordersRouter.get('/', async (_req: Request, res: Response) => {
     tableNumber: order.tableNumber,
     total: Number(order.total),
     createdAt: order.createdAt.toISOString(),
-    items: order.items.map((item) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      product: {
-        id: item.product.id,
-        name: item.productName,
-        description: item.product.description,
-        price: Number(item.productPrice),
-        category: item.product.category,
-        createdAt: item.product.createdAt.toISOString(),
-      },
-    })),
+    items: order.items.map(serializeItem),
   }))
 
   res.json(mapped)
@@ -38,7 +68,16 @@ ordersRouter.get('/', async (_req: Request, res: Response) => {
 // POST /api/orders
 ordersRouter.post('/', async (req: Request, res: Response) => {
   const { items, tableNumber, total } = req.body as {
-    items: Array<{ productId: string; quantity: number; productName: string; productPrice: number }>
+    items: Array<{
+      productId: string
+      quantity: number
+      productName: string
+      productPrice: number
+      isHalfHalf?: boolean
+      secondProductId?: string
+      secondProductName?: string
+      secondProductPrice?: number
+    }>
     tableNumber?: number
     total: number
   }
@@ -58,6 +97,10 @@ ordersRouter.post('/', async (req: Request, res: Response) => {
           productName: item.productName,
           productPrice: item.productPrice,
           quantity: item.quantity,
+          isHalfHalf: item.isHalfHalf ?? false,
+          secondProductId: item.secondProductId ?? null,
+          secondProductName: item.secondProductName ?? null,
+          secondProductPrice: item.secondProductPrice ?? null,
         })),
       },
     },
@@ -71,18 +114,7 @@ ordersRouter.post('/', async (req: Request, res: Response) => {
     tableNumber: order.tableNumber,
     total: Number(order.total),
     createdAt: order.createdAt.toISOString(),
-    items: order.items.map((item) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      product: {
-        id: item.product.id,
-        name: item.productName,
-        description: item.product.description,
-        price: Number(item.productPrice),
-        category: item.product.category,
-        createdAt: item.product.createdAt.toISOString(),
-      },
-    })),
+    items: order.items.map(serializeItem),
   }
 
   res.status(201).json(mapped)
@@ -99,10 +131,7 @@ ordersRouter.patch('/:id/status', async (req: Request, res: Response) => {
     return
   }
 
-  const order = await prisma.order.update({
-    where: { id },
-    data: { status },
-  })
+  const order = await prisma.order.update({ where: { id }, data: { status } })
   res.json({ id: order.id, status: order.status })
 })
 

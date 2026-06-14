@@ -1,12 +1,26 @@
 import { useState } from 'react'
 import { Trash2, ChevronDown, ChevronUp } from 'lucide-react'
-import { Order } from '../../types'
+import { Order, OrderItem } from '../../types'
 import { useOrderStore } from '../../store/orderStore'
 import { Badge } from '../ui/Badge'
 import { StatusSelector } from './StatusSelector'
 
 interface OrderCardProps {
   order: Order
+}
+
+function itemLabel(item: OrderItem): string {
+  if (item.isHalfHalf && item.secondProduct) {
+    return `${item.product.name} / ${item.secondProduct.name}`
+  }
+  return item.product.name
+}
+
+function itemKey(item: OrderItem): string {
+  if (item.isHalfHalf && item.secondProduct) {
+    return `half:${item.productId}:${item.secondProduct.id}`
+  }
+  return item.productId
 }
 
 export function OrderCard({ order }: OrderCardProps) {
@@ -66,10 +80,15 @@ export function OrderCard({ order }: OrderCardProps) {
         <div className="px-5 pb-3 flex flex-wrap gap-1.5">
           {order.items.map((item) => (
             <span
-              key={item.productId}
-              className="text-xs bg-surface_container_low text-on_surface_variant px-2.5 py-1 rounded-full font-body"
+              key={itemKey(item)}
+              className="text-xs bg-surface_container_low text-on_surface_variant px-2.5 py-1 rounded-full font-body flex items-center gap-1"
             >
-              {item.quantity}x {item.product.name}
+              {item.quantity}x {itemLabel(item)}
+              {item.isHalfHalf && (
+                <span className="text-[10px] bg-secondary_container text-on_secondary_container px-1 rounded-full">
+                  ½+½
+                </span>
+              )}
             </span>
           ))}
         </div>
@@ -80,11 +99,18 @@ export function OrderCard({ order }: OrderCardProps) {
         <div className="px-5 pb-4 border-t border-outline_variant/15 mt-1 pt-4 flex flex-col gap-3">
           <div className="flex flex-col gap-2">
             {order.items.map((item) => (
-              <div key={item.productId} className="flex justify-between items-center">
-                <span className="font-body text-on_surface text-sm">
-                  {item.quantity}x {item.product.name}
-                </span>
-                <span className="font-display font-semibold text-on_surface text-sm">
+              <div key={itemKey(item)} className="flex justify-between items-start gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-body text-on_surface text-sm">
+                    {item.quantity}x {itemLabel(item)}
+                  </span>
+                  {item.isHalfHalf && (
+                    <span className="text-[10px] bg-secondary_container text-on_secondary_container px-1.5 py-0.5 rounded-full font-body">
+                      ½+½
+                    </span>
+                  )}
+                </div>
+                <span className="font-display font-semibold text-on_surface text-sm flex-shrink-0">
                   R${(item.product.price * item.quantity).toFixed(2).replace('.', ',')}
                 </span>
               </div>

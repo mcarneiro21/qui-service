@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProductStore, CATEGORY_FILTER_OPTIONS } from '../store/productStore'
-import { useOrderStore } from '../store/orderStore'
-import { ProductCategory } from '../types'
+import { useOrderStore, itemKey } from '../store/orderStore'
+import { Product, ProductCategory } from '../types'
 import { CatalogItem } from '../components/catalog/CatalogItem'
 import { CartItem } from '../components/orders/CartItem'
 import { CartSummary } from '../components/orders/CartSummary'
 import { GlassCard } from '../components/ui/GlassCard'
 import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/layout/PageHeader'
-import { ShoppingCart, Loader2 } from 'lucide-react'
+import { ShoppingCart, Loader2, X } from 'lucide-react'
 
 type FilterValue = ProductCategory | 'all'
 
@@ -20,6 +20,7 @@ export function CreateOrder() {
   const fetchProducts = useProductStore((s) => s.fetchProducts)
   const cart = useOrderStore((s) => s.cart)
   const addToCart = useOrderStore((s) => s.addToCart)
+  const addHalfHalfToCart = useOrderStore((s) => s.addHalfHalfToCart)
   const updateCartQuantity = useOrderStore((s) => s.updateCartQuantity)
   const setTableNumber = useOrderStore((s) => s.setTableNumber)
   const confirmOrder = useOrderStore((s) => s.confirmOrder)
@@ -27,13 +28,16 @@ export function CreateOrder() {
   const [filter, setFilter] = useState<FilterValue>('all')
   const [tableInput, setTableInput] = useState('')
   const [confirming, setConfirming] = useState(false)
+  // Seleção meio a meio: guarda a primeira pizza escolhida
+  const [halfHalfFirst, setHalfHalfFirst] = useState<Product | null>(null)
 
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
 
+  // Mapa de quantidades no carrinho para itens normais
   const cartMap = useMemo(
-    () => new Map(cart.items.map((i) => [i.productId, i.quantity])),
+    () => new Map(cart.items.filter((i) => !i.isHalfHalf).map((i) => [i.productId, i.quantity])),
     [cart.items]
   )
 
@@ -41,6 +45,20 @@ export function CreateOrder() {
     () => filter === 'all' ? products : products.filter((p) => p.category === filter),
     [products, filter]
   )
+
+  // Ao clicar em "½+½" na primeira pizza
+  function handleStartHalfHalf(product: Product) {
+    setHalfHalfFirst(product)
+    // Força mostrar só pizzas para facilitar seleção da segunda metade
+    setFilter('pizza')
+  }
+
+  // Ao clicar na segunda pizza (botão "+" quando halfHalfFirst está ativo)
+  function handleSelectSecondHalf(second: Product) {
+    if (!halfHalfFirst) return
+    addHalfHalfToCart(halfHalfFirst, second)
+    setHalfHalfFirst(null)
+  }
 
   async function handleConfirm() {
     if (confirming) return
@@ -66,6 +84,25 @@ export function CreateOrder() {
       <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-6">
         {/* Catalog */}
         <div>
+          {/* Banner de seleção da 2ª metade */}
+          {halfHalfFirst && (
+            <div className="mb-4 px-4 py-3 rounded-2xl bg-secondary_container text-on_secondary_container flex items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold font-display text-sm">Escolha a 2ª metade</p>
+                <p className="text-xs font-body mt-0.5">
+                  1ª metade: <strong>{halfHalfFirst.name}</strong> — clique em outra pizza
+                </p>
+              </div>
+              <button
+                onClick={() => setHalfHalfFirst(null)}
+                className="p-1.5 rounded-xl hover:bg-black/10 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+
+          {/* Filtros de categoria */}
           <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
             {CATEGORY_FILTER_OPTIONS.map((opt) => (
               <button
@@ -89,9 +126,7 @@ export function CreateOrder() {
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-on_surface_variant font-body">
-                Nenhum produto nessa categoria
-              </p>
+              <p className="text-on_surface_variant font-body">Nenhum produto nessa categoria</p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -100,9 +135,21 @@ export function CreateOrder() {
                   key={product.id}
                   product={product}
                   quantityInCart={cartMap.get(product.id) ?? 0}
-                  onAdd={() => addToCart(product)}
+                  selectingSecondHalf={!!halfHalfFirst && product.category === 'pizza' && product.id !== halfHalfFirst.id}
+                  onAdd={() => {
+                    if (halfHalfFirst && product.category === 'pizza') {
+                      handleSelectSecondHalf(product)
+                    } else {
+                      addToCart(product)
+                    }
+                  }}
                   onRemove={() =>
                     updateCartQuantity(product.id, (cartMap.get(product.id) ?? 1) - 1)
+                  }
+                  onHalfHalf={
+                    product.category === 'pizza' && !halfHalfFirst
+                      ? () => handleStartHalfHalf(product)
+                      : undefined
                   }
                 />
               ))}
@@ -144,7 +191,7 @@ export function CreateOrder() {
               ) : (
                 <div className="divide-y divide-outline_variant/15">
                   {cart.items.map((item) => (
-                    <CartItem key={item.productId} item={item} />
+                    <CartItem key={itemKey(item)} item={item} />
                   ))}
                 </div>
               )}
