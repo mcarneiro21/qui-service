@@ -76,39 +76,33 @@ const CUSTOMERS = [
 ]
 
 async function main() {
-  console.log(`[seed] Sincronizando ${PRODUCTS.length} produtos do cardápio...`)
-
+  // Cardápio: cria apenas os produtos que faltam. NUNCA sobrescreve um produto
+  // existente — preços/descrições/categorias editados na aplicação são preservados.
   let created = 0
-  let updated = 0
-
   for (const data of PRODUCTS) {
     const existing = await prisma.product.findFirst({ where: { name: data.name } })
-    if (existing) {
-      await prisma.product.update({
-        where: { id: existing.id },
-        data: { price: data.price, description: data.description, category: data.category },
-      })
-      updated++
-    } else {
+    if (!existing) {
       await prisma.product.create({ data })
       created++
     }
   }
+  console.log(`[seed] Cardápio — ${created} criados, ${PRODUCTS.length - created} já existiam.`)
 
-  console.log(`[seed] Produtos — ${created} criados, ${updated} atualizados.`)
+  // Clientes de exemplo: somente fora de produção (conveniência de desenvolvimento).
+  if (process.env.NODE_ENV === 'production') {
+    console.log('[seed] Produção: clientes de exemplo não são criados.')
+    return
+  }
 
   let custCreated = 0
   for (const data of CUSTOMERS) {
     const existing = await prisma.customer.findFirst({ where: { phone: data.phone } })
-    if (existing) {
-      await prisma.customer.update({ where: { id: existing.id }, data })
-    } else {
+    if (!existing) {
       await prisma.customer.create({ data })
       custCreated++
     }
   }
-
-  console.log(`[seed] Clientes — ${custCreated} criados.`)
+  console.log(`[seed] Clientes de exemplo — ${custCreated} criados.`)
 }
 
 main()
