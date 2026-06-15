@@ -11,3 +11,6 @@ service:
 
 imagePullSecrets:
   - name: dockerhub-cred
+
+nodeSelector:
+  kubernetes.io/hostname: insecure-worker1
