@@ -9,6 +9,8 @@
     "dev:server": "tsx watch server/index.ts",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "start": "tsx server/index.ts",
+    "start:prod": "prisma migrate deploy && tsx server/index.ts",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio"

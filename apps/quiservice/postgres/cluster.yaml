@@ -1,0 +1,36 @@
+# PostgreSQL de produção (CloudNativePG) para o Qui Service.
+#
+# Isto é INFRAESTRUTURA PERSISTENTE — fica fora de templates/ de propósito, para
+# o Helm/CI não recriar o banco a cada deploy. Aplique UMA VEZ:
+#
+#   1) Instale o operator CloudNativePG (uma vez no cluster):
+#      kubectl apply --server-side -f \
+#        https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.24/releases/cnpg-1.24.0.yaml
+#
+#   2) Aplique este Cluster:
+#      kubectl apply -f apps/quiservice/postgres/cluster.yaml
+#
+# O operator cria automaticamente:
+#   - Secret  "quiservice-db-app"  (chave `uri` = string de conexão pronta)
+#   - Service "quiservice-db-rw"   (ClusterIP — banco só acessível dentro do cluster)
+#   - Certificados TLS e o volume (PVC) persistente
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: quiservice-db
+spec:
+  instances: 1
+
+  # Mantém o banco no mesmo node do app (onde fica o volume local-path).
+  affinity:
+    nodeSelector:
+      kubernetes.io/hostname: insecure-worker1
+
+  storage:
+    size: 5Gi
+    storageClass: local-path
+
+  bootstrap:
+    initdb:
+      database: qui_service
+      owner: app

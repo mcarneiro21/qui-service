@@ -36,14 +36,17 @@ RUN pnpm build
 FROM base AS production
 
 ENV NODE_ENV=production
+ENV PORT=80
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server ./server
 COPY --from=builder /app/prisma ./prisma
 COPY package.json ./
 
 RUN pnpm exec prisma generate
 
-EXPOSE 3001
+EXPOSE 80
 
-CMD ["node", "dist/server/index.js"]
+# Aplica as migrations e sobe o servidor (que também serve o frontend).
+CMD ["pnpm", "start:prod"]
