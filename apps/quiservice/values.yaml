@@ -10,4 +10,4 @@ service:
   nodePort: 30051
 
 imagePullSecrets:
-  - name: regcred
+  - name: dockerhub-cred
