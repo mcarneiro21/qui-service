@@ -1,0 +1,13 @@
+image:
+  repository: mcarneiro21/quiservice
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 80
+  nodePort: 30050
+
+imagePullSecrets:
+  - name: regcred
