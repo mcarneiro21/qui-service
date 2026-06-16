@@ -10,39 +10,19 @@
   }
 }
 
-/* Cupom: fora da tela normalmente, visível só na impressão */
-.receipt-print {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-}
-
+/* Impressão do cupom: a página /recibo/:id é o documento inteiro (sem AppShell).
+   Imprimir a janela imprime só o cupom — confiável no Android/RawBT. */
 @media print {
-  /* Papel da impressora térmica de 58mm, sem margens */
   @page {
     size: 58mm auto;
     margin: 0;
   }
-  html,
-  body {
-    width: 58mm;
-    margin: 0;
-    padding: 0;
+  .no-print {
+    display: none !important;
   }
-  body * {
-    visibility: hidden;
-  }
-  .receipt-print,
-  .receipt-print * {
-    visibility: visible;
-  }
-  .receipt-print {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 58mm;
-    color: #000 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  .receipt-screen {
+    min-height: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
   }
 }

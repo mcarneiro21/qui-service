@@ -3,12 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useProductStore, CATEGORY_FILTER_OPTIONS } from '../store/productStore'
 import { useOrderStore, itemKey } from '../store/orderStore'
 import { useCustomerStore } from '../store/customerStore'
-import { Customer, Order, Product, ProductCategory } from '../types'
+import { Customer, Product, ProductCategory } from '../types'
 import { CatalogItem } from '../components/catalog/CatalogItem'
 import { CartItem } from '../components/orders/CartItem'
 import { CartSummary } from '../components/orders/CartSummary'
 import { CustomerSelect } from '../components/customers/CustomerSelect'
-import { Receipt } from '../components/orders/Receipt'
 import { GlassCard } from '../components/ui/GlassCard'
 import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/layout/PageHeader'
@@ -40,31 +39,11 @@ export function CreateOrder() {
   const [confirming, setConfirming] = useState(false)
   const [confirmError, setConfirmError] = useState<string | null>(null)
   const [halfHalfFirst, setHalfHalfFirst] = useState<Product | null>(null)
-  const [printOrder, setPrintOrder] = useState<Order | null>(null)
 
   useEffect(() => {
     fetchProducts()
     fetchCustomers()
   }, [fetchProducts, fetchCustomers])
-
-  // Impressão automática do cupom após confirmar
-  useEffect(() => {
-    if (!printOrder) return
-    let navigated = false
-    const go = () => {
-      if (navigated) return
-      navigated = true
-      navigate('/pedidos')
-    }
-    window.addEventListener('afterprint', go)
-    const raf = requestAnimationFrame(() => window.print())
-    const fallback = setTimeout(go, 3000)
-    return () => {
-      window.removeEventListener('afterprint', go)
-      cancelAnimationFrame(raf)
-      clearTimeout(fallback)
-    }
-  }, [printOrder, navigate])
 
   const cartMap = useMemo(
     () => new Map(cart.items.filter((i) => !i.isHalfHalf).map((i) => [i.productId, i.quantity])),
@@ -93,7 +72,7 @@ export function CreateOrder() {
     setConfirmError(null)
     try {
       const order = await confirmOrder()
-      setPrintOrder(order) // dispara a impressão automática (useEffect)
+      navigate(`/recibo/${order.id}`) // página dedicada do cupom + impressão
     } catch (e) {
       setConfirmError((e as Error).message)
       setConfirming(false)
@@ -277,8 +256,6 @@ export function CreateOrder() {
         )}
       </div>
 
-      {/* Cupom para impressão (fora da tela, visível só ao imprimir) */}
-      {printOrder && <Receipt order={printOrder} />}
     </div>
   )
 }

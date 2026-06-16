@@ -1,0 +1,63 @@
+# Cloudflare Tunnel — expõe o Qui Service na internet via domínio Cloudflare,
+# sem abrir portas no roteador nem precisar de IP público.
+#
+# ── Passo a passo (uma vez) ───────────────────────────────────────────────────
+# 1) No painel Cloudflare → Zero Trust → Networks → Tunnels → Create a tunnel
+#    → tipo "Cloudflared" → dê um nome (ex.: "homelab-quiservice").
+#    Copie o TOKEN do túnel (aparece no comando de instalação: `--token eyJ...`).
+#
+# 2) Crie o Secret com esse token (NÃO versionar no Git):
+#      kubectl create secret generic cloudflared-token \
+#        --from-literal=token='eyJ...<TOKEN>...'
+#
+# 3) Aplique este manifesto:
+#      kubectl apply -f apps/quiservice/cloudflared/deployment.yaml
+#
+# 4) Ainda no painel do túnel → aba "Public Hostnames" → Add a public hostname:
+#      - Subdomain/Domain: ex.  pedidos.seudominio.com
+#      - Service: HTTP  →  quiservice:80
+#    A Cloudflare cria o DNS (CNAME proxied) automaticamente. Em segundos,
+#    https://pedidos.seudominio.com já serve a aplicação com TLS.
+#
+# 5) (RECOMENDADO) Proteja com Cloudflare Access:
+#    Zero Trust → Access → Applications → Add → Self-hosted → o mesmo hostname
+#    → policy permitindo só os e-mails do cliente (login por OTP/Google).
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  labels:
+    app: cloudflared
+spec:
+  replicas: 2 # 2 réplicas = conexão de túnel resiliente (recomendação Cloudflare)
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: insecure-worker1
+      containers:
+        - name: cloudflared
+          image: cloudflare/cloudflared:latest # recomendado fixar uma versão depois
+          args:
+            - tunnel
+            - --no-autoupdate
+            - run
+          env:
+            # cloudflared lê o token do túnel desta variável.
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflared-token
+                  key: token
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
